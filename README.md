@@ -5,6 +5,7 @@
 * admin
 * admin/update
 * admin/list
+
 ## two interface
 * new or update movie
 * delete movie
