@@ -1,4 +1,4 @@
-# Imooc video about Nodejs movie project 1 by Scott teacher
+# Imooc video about Nodejs movie project by Scott teacher
 ## five pages
 * index
 * movie/:id
