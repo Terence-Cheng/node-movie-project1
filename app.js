@@ -9,11 +9,22 @@ var _ = require('underscore');
 var routes = require('./routes/index');
 var users = require('./routes/users');
 
+var session = require('express-session');
 var port = process.env.PORT || 3000;
 var app = express();
 app.locals.moment = require('moment');
 
+app.use(cookieParser());
+app.use(session({
+    secret: 'imooc',
+    resave: false,
+    saveUninitialized: true
+}))
+
+// Models
 var Movie = require('./models/movie.js');
+var User = require('./models/user.js');
+
 mongoose.connect('mongodb://localhost/immoc');
 
 // view engine setup
@@ -31,6 +42,8 @@ app.use(bodyParser());
 // routes
 // index page
 app.get('/', function (req, res) {
+    console.log('user in session');
+    console.log(req.session.user);
     Movie.fetch(function (err, movies) {
         if (err) {
             console.log(err);
@@ -41,6 +54,68 @@ app.get('/', function (req, res) {
         });
     })
 });
+
+// signup
+app.post('/user/signup', function(req, res) {
+    // 路由里面的参数 /:userid          req.params.userid
+    // 请求体里面的参数 {userid: 1234}  req.body.userid
+    // 查询参数 ?userid = 1234         req.query.userid
+    // req.param('userid') 会按照前面三个的优先级来获取
+    var _user = req.body.user; //req.param('user')同样可以取到
+    console.log(_user); // bodyParser将其转换为对象
+
+    User.findOne({name: _user.name}, function(err, user) {
+        if (err) console.log(err);
+        if (user) {
+            return res.redirect('/signin'); // 相当于当前的location.host
+        } else {
+            var user = new User(_user);
+            user.save(function(err, user) {
+                if (err) console.log(err);
+                console.log(user);
+                res.redirect('/admin/userlist');
+            });
+        }
+    })
+})
+
+// signin
+app.post('/user/signin', function(req, res) {
+    var _user = req.body.user;
+    var name = _user.name;
+    var password = _user.password;
+
+    User.findOne({name:name}, function(err, user) {
+        if (err) console.log(err);
+
+        if (!user) {
+            return res.redirect('/');
+        }
+
+        user.comparePassword(password, function(err, isMatch) {
+            if (err) console.log(err);
+
+            if(isMatch) {
+                console.log('password is matched');
+                req.session.user = user;
+                return res.redirect('/');
+            } else {
+                console.log('password is not matched');
+            }
+        })
+
+    })
+})
+
+app.get('/admin/userlist', function(req, res) {
+    User.fetch(function(err, users) {
+        if (err) console.log(err);
+        res.render('userlist', {
+            title: '电影-用户列表',
+            users: users
+        })
+    })
+})
 
 // detail page
 app.get('/movie/:id', function (req, res) {

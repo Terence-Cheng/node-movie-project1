@@ -43,6 +43,16 @@ UserSchema.pre('save', function (next) {
     })
 });
 
+UserSchema.methods = {
+    comparePassword: function(_password, cb) {
+        bcrypt.compare(_password, this.password, function(err, isMatch) {
+            if (err) return cb(err);
+
+            cb(null, isMatch);
+        })
+    }
+}
+
 // static function
 UserSchema.statics = {
     /* fetch all data */

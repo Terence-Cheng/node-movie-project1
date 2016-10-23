@@ -13,10 +13,12 @@
     "cookie-parser": "~1.4.3",
     "debug": "~2.2.0",
     "express": "~4.13.4",
+    "express-session": "^1.14.1",
+    "grunt": "*",
     "jade": "~1.11.0",
+    "moment": "*",
     "mongoose": "*",
     "morgan": "~1.7.0",
-    "moment": "*",
     "serve-favicon": "~2.3.0",
     "underscore": "*"
   },
