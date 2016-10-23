@@ -7,6 +7,8 @@
   },
   "main": "./app.js",
   "dependencies": {
+    "bcrypt-nodejs": "0.0.3",
+    "bcryptjs": "*",
     "body-parser": "~1.15.1",
     "cookie-parser": "~1.4.3",
     "debug": "~2.2.0",
@@ -17,5 +19,10 @@
     "moment": "*",
     "serve-favicon": "~2.3.0",
     "underscore": "*"
+  },
+  "devDependencies": {
+    "grunt-concurrent": "^2.3.1",
+    "grunt-contrib-watch": "^1.0.0",
+    "grunt-nodemon": "^0.4.2"
   }
 }
