@@ -32,7 +32,7 @@ app.use(session({
 }));
 
 // view engine setup
-app.set('views', path.join(__dirname, './views/pages'));
+app.set('views', path.join(__dirname, './app/views/pages'));
 app.set('view engine', 'jade');
 app.listen(port);
 console.log('movie nodejs started on port: ' + port);
@@ -42,6 +42,13 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // form data seralize
 app.use(bodyParser());
+
+if ('development' === app.get('env')) {
+    app.set('showStackError', true);
+    app.use(logger(':method :url :status'));
+    app.locals.pretty = true; //格式化源码
+    mongoose.set('debug', true); //数据库调试
+}
 
 // routes
 require('./config/routes.js')(app);

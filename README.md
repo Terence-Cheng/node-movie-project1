@@ -20,3 +20,7 @@
 * cnpm install grunt-contrib-watch --save-dev
 * cnpm install grunt-nodemon --save-dev
 * cnpm install grunt-concurrent --save-dev
+
+## The konwledge or error I made
+* populate, add some attributes to the data which is used in the views
+* comment.js in controllers layer,I make a error,because the comment variable in the if branch is diffrent from the else branch. Don't use the on function

@@ -1,254 +1,36 @@
-var Movie = require('../models/movie.js');
-var User = require('../models/user.js');
-var _ = require('underscore');
+var Index = require('../app/controllers/index.js'),
+    User = require('../app/controllers/user.js'),
+    Movie = require('../app/controllers/movie.js'),
+    Comment = require('../app/controllers/comment.js');
 
 module.exports = function (app) {
     app.use(function (req, res, next) {
         var _user = req.session.user;
-        if (_user) {
-            //挂到locals上面，就是程序的本地变量，可以在页面访问到
-            app.locals.user = _user;
-        }
-        return  next();
+        //挂到locals上面，就是程序的本地变量，可以在页面访问到
+        app.locals.user = _user;
+        next();
     })
 
-    // index page
-    app.get('/', function (req, res) {
-        console.log('user in session');
-        console.log(req.session.user);
+    // index
+    app.get('/', Index.index);
 
-        Movie.fetch(function (err, movies) {
-            if (err) {
-                console.log(err);
-            }
-            res.render('index', {
-                title: 'movie 首页',
-                movies: movies
-            });
-        })
-    });
+    // user
+    app.post('/user/signup', User.signup);
+    app.post('/user/signin', User.signin);
+    app.get('/signin', User.showSignin);
+    app.get('/signup', User.showSignup);
+    app.get('/admin/user/list', User.signinRequired, User.adminRequired, User.list);
+    app.get('/logout', User.logout);
 
-    // signup
-    app.post('/user/signup', function(req, res) {
-        // 路由里面的参数 /:userid          req.params.userid
-        // 请求体里面的参数 {userid: 1234}  req.body.userid
-        // 查询参数 ?userid = 1234         req.query.userid
-        // req.param('userid') 会按照前面三个的优先级来获取
-        var _user = req.body.user; //req.param('user')同样可以取到
-        console.log(_user); // bodyParser将其转换为对象
+    // movie
+    app.get('/movie/:id', Movie.detail);
+    app.get('/admin/movie/new', User.signinRequired, User.adminRequired, Movie.new);
+    app.get('/admin/movie/update/:id', User.signinRequired, User.adminRequired, Movie.update);
+    app.get('/admin/movie/list', User.signinRequired, User.adminRequired, Movie.list);
+    app.post('/admin/movie/new', User.signinRequired, User.adminRequired, Movie.save);
+    app.delete('/admin/movie/delete', User.signinRequired, User.adminRequired, Movie.delete);
 
-        User.findOne({name: _user.name}, function(err, user) {
-            if (err) console.log(err);
-            if (user) {
-                return res.redirect('/signin'); // 相当于当前的location.host
-            } else {
-                var user = new User(_user);
-                user.save(function(err, user) {
-                    if (err) console.log(err);
-                    console.log(user);
-                    res.redirect('/admin/userlist');
-                });
-            }
-        })
-    })
+    // comment
+    app.post('/user/comment', User.signinRequired, Comment.save);
 
-    // signin
-    app.post('/user/signin', function(req, res) {
-        var _user = req.body.user;
-        var name = _user.name;
-        var password = _user.password;
-
-        User.findOne({name:name}, function(err, user) {
-            if (err) console.log(err);
-
-            if (!user) {
-                return res.redirect('/');
-            }
-
-            user.comparePassword(password, function(err, isMatch) {
-                if (err) console.log(err);
-
-                if(isMatch) {
-                    console.log('password is matched');
-                    req.session.user = user;
-                    return res.redirect('/');
-                } else {
-                    console.log('password is not matched');
-                }
-            })
-
-        })
-    })
-
-    // logout
-    app.get('/logout', function (req, res) {
-        delete req.session.user;
-        delete app.locals.user;
-        res.redirect('/');
-    })
-
-    app.get('/admin/userlist', function(req, res) {
-        User.fetch(function(err, users) {
-            if (err) console.log(err);
-            res.render('userlist', {
-                title: '电影-用户列表',
-                users: users
-            })
-        })
-    })
-
-    // detail page
-    app.get('/movie/:id', function (req, res) {
-        var id = req.params.id;
-        Movie.findById(id ,function (err, movie) {
-            if (err) {
-                console.log(err);
-            }
-            res.render('detail', {
-                title: 'movie 详情' + movie.title,
-                movie: movie
-            });
-        });
-
-    });
-
-    // admin 录入 page
-    app.get('/admin/movie', function (req, res) {
-        res.render('admin', {
-            title: 'movie 后台录入页',
-            movie: {
-                doctor: '',
-                country: '',
-                title: '',
-                year: '',
-                poster: '',
-                language: '',
-                flash: '',
-                summary: ''
-            }
-        })
-    });
-
-    // admin update movie page
-    app.get('/admin/update/:id', function (req, res) {
-        var id = req.params.id;
-
-        if (id) {
-            Movie.findById(id, function (err, movie) {
-                res.render('admin', {
-                    title: '后台更新页',
-                    movie: movie
-                })
-            })
-        }
-    })
-
-    // admin list page
-    app.get('/admin/list', function (req, res) {
-        Movie.fetch(function (err, movies) {
-            if (err) console.log(err);
-            res.render('list', {
-                title: 'movie 列表页',
-                movies: movies
-            });
-        })
-    });
-
-    // admin post 接口  新增or 修改 电影请求接口
-    app.post('/admin/movie/new', function (req, res) {
-        var id = req.body.movie._id;
-        var movieObj = req.body.movie;
-        var _movie;
-        if (id !== 'undefined') {
-            Movie.findById(id, function (err, movie) {
-                if (err) {
-                    console.log(err);
-                }
-                _movie = _.extend(movie, movieObj);
-                _movie.save(function (err, movie) {
-                    if (err) {
-                        console.log(err);
-                    }
-                    res.redirect('/movie/' + movie._id);
-                })
-            })
-        } else {
-            _movie = new Movie({
-                doctor: movieObj.doctor,
-                title: movieObj.title,
-                country: movieObj.country,
-                language: movieObj.language,
-                year: movieObj.year,
-                poster: movieObj.poster,
-                summary: movieObj.summary,
-                flash: movieObj.flash
-            });
-            _movie.save(function (err, movie) {
-                if (err) {
-                    console.log(err);
-                }
-                res.redirect('/movie/' + movie._id);
-            });
-        }
-
-    })
-
-    // list delete movie 接口
-    app.delete('/admin/control/delete', function (req, res) {
-        var id = req.query.id;
-        if (id) {
-            Movie.remove({_id: id}, function (err, movie) {
-                if (err) {
-                    console.log(err);
-                } else {
-                    res.json({success: true});
-                }
-            })
-        }
-    })
-
-    // uncomment after placing your favicon in /public
-    //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
-
-        /*app.use(logger('dev'));
-         app.use(bodyParser.json());
-         app.use(bodyParser.urlencoded({ extended: false }));
-         app.use(cookieParser());
-         app.use(express.static(path.join(__dirname, 'public')));
-
-         app.use('/', routes);
-         app.use('/users', users);*/
-
-    // catch 404 and forward to error handler
-        /*app.use(function(req, res, next) {
-         var err = new Error('Not Found');
-         err.status = 404;
-         next(err);
-         });*/
-
-    // error handlers
-
-    // development error handler
-    // will print stacktrace
-        /*if (app.get('env') === 'development') {
-         app.use(function(err, req, res, next) {
-         res.status(err.status || 500);
-         res.render('error', {
-         message: err.message,
-         error: err
-         });
-         });
-         }*/
-
-    // production error handler
-    // no stacktraces leaked to user
-        /*
-         app.use(function(err, req, res, next) {
-         res.status(err.status || 500);
-         res.render('error', {
-         message: err.message,
-         error: {}
-         });
-         });
-         */
 }
